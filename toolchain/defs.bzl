@@ -108,31 +108,17 @@ def _gcc_toolchain_impl(rctx):
         ]
     ]
 
-    cxx_builtin_includes = []
-    if target_arch == ARCHS.x86_64:
-        cxx_builtin_includes.extend([
-            include.format(
-                gcc_version = rctx.attr.gcc_version,
-                include_prefix = include_prefix,
-            )
-            for include in [
-                "%workspace%/include/c++/{gcc_version}",
-                "%workspace%/include/c++/{gcc_version}/{include_prefix}",
-                "%workspace%/include/c++/{gcc_version}/backward",
-            ]
-        ])
-    else:
-        cxx_builtin_includes.extend([
-            include.format(
-                gcc_version = rctx.attr.gcc_version,
-                include_prefix = include_prefix,
-            )
-            for include in [
-                "%workspace%/{include_prefix}include/c++/{gcc_version}",
-                "%workspace%/{include_prefix}include/c++/{gcc_version}/{include_prefix}",
-                "%workspace%/{include_prefix}include/c++/{gcc_version}/backward",
-            ]
-        ])
+    cxx_builtin_includes = [
+        include.format(
+            gcc_version = rctx.attr.gcc_version,
+            include_prefix = include_prefix,
+        )
+        for include in [
+            "%workspace%/{include_prefix}include/c++/{gcc_version}",
+            "%workspace%/{include_prefix}include/c++/{gcc_version}/{include_prefix}",
+            "%workspace%/{include_prefix}include/c++/{gcc_version}/backward",
+        ]
+    ]
 
     f_builtin_includes = [
         include.format(
