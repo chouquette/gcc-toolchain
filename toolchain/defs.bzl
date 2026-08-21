@@ -403,6 +403,17 @@ _TOOLCHAIN_DECLARATION_ATTRS = {
         doc = "constraint_values passed to target_compatible_with of the toolchain. {target_arch} is rendered to the target_arch attribute value.",
         mandatory = False,
     ),
+    "exec_compatible_with": attr.string_list(
+        default = [
+            "@platforms//os:linux",
+            "@platforms//cpu:{target_arch}",
+        ],
+        doc = "constraint_values passed to exec_compatible_with of the toolchain. {target_arch} is rendered to the" +
+              " target_arch attribute value. Defaults to matching target_arch (i.e. a native compiler), but must" +
+              " be overridden for genuine cross toolchains whose execution platform differs from target_arch" +
+              " (e.g. an aarch64-hosted compiler targeting armv7).",
+        mandatory = False,
+    ),
     "target_settings": attr.string_list(
         default = [],
         doc = "Additional config_settings passed to target_settings of the toolchain, on top of the GCC version selection. {target_arch} is rendered to the target_arch attribute value.",
@@ -440,6 +451,11 @@ def _gcc_toolchains_hub_impl(rctx):
     extra_target_settings = [
         v.format(target_arch = target_arch)
         for v in rctx.attr.target_settings
+    ]
+
+    exec_compatible_with = [
+        v.format(target_arch = target_arch)
+        for v in rctx.attr.exec_compatible_with
     ]
 
     toolchain_repos = rctx.attr.toolchain_repos
@@ -480,6 +496,7 @@ def _gcc_toolchains_hub_impl(rctx):
         setting = ":_gcc_version_default" if is_default else ":_gcc_version_" + _sanitize_version(gcc_version)
         content.append(_HUB_TOOLCHAIN_TEMPLATE.format(
             suffix = suffix,
+            exec_compatible_with = exec_compatible_with,
             target_compatible_with = target_compatible_with,
             target_settings = [setting] + extra_target_settings,
             toolchain_repo = toolchain_repos[gcc_version],
@@ -487,6 +504,7 @@ def _gcc_toolchains_hub_impl(rctx):
         if rctx.attr.enable_fortran:
             content.append(_HUB_FORTRAN_TOOLCHAIN_TEMPLATE.format(
                 suffix = suffix,
+                exec_compatible_with = exec_compatible_with,
                 target_compatible_with = target_compatible_with,
                 target_settings = [setting] + extra_target_settings,
                 toolchain_repo = toolchain_repos[gcc_version],
@@ -558,6 +576,7 @@ ATTRS_SHARED_WITH_MODULE_EXTENSION = {
         "extra_asmflags",
         "binary_prefix",
         "extra_target_compatible_with",
+        "exec_compatible_with",
         "supports_param_files",
     ]
 }
@@ -684,6 +703,7 @@ def gcc_declare_toolchain(
     gcc_versions = kwargs.pop("gcc_versions", json.encode(AVAILABLE_GCC_VERSIONS))
     enable_fortran = kwargs.pop("enable_fortran", True)
     extra_target_compatible_with = kwargs.pop("extra_target_compatible_with", [])
+    exec_compatible_with = kwargs.pop("exec_compatible_with", None)
     target_compatible_with = kwargs.pop("target_compatible_with", None)
     target_settings = kwargs.pop("target_settings", [])
 
@@ -725,6 +745,8 @@ def gcc_declare_toolchain(
     # one may fall back to the attribute default.
     if target_compatible_with != None:
         hub_kwargs["target_compatible_with"] = target_compatible_with
+    if exec_compatible_with != None:
+        hub_kwargs["exec_compatible_with"] = exec_compatible_with
 
     # The hub BUILD file resolves @bazel_skylib, @platforms and @rules_cc as well, so it needs the
     # same repository mapping as the per-version repositories.
@@ -812,10 +834,7 @@ package(default_visibility = ["//visibility:public"])'''
 _HUB_TOOLCHAIN_TEMPLATE = '''\
 toolchain(
     name = "cc_toolchain{suffix}",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
+    exec_compatible_with = {exec_compatible_with},
     target_compatible_with = {target_compatible_with},
     target_settings = {target_settings},
     toolchain = "@{toolchain_repo}//:_cc_toolchain",
@@ -825,10 +844,7 @@ toolchain(
 _HUB_FORTRAN_TOOLCHAIN_TEMPLATE = '''\
 toolchain(
     name = "fortran_toolchain{suffix}",
-    exec_compatible_with = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
+    exec_compatible_with = {exec_compatible_with},
     target_compatible_with = {target_compatible_with},
     target_settings = {target_settings},
     toolchain = "@{toolchain_repo}//:_fortran_toolchain",
