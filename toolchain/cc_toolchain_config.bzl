@@ -139,6 +139,17 @@ def _impl(ctx):
         ],
     )
 
+    default_link_libs_feature = feature(
+        name = "default_link_libs",
+        enabled = True,
+        flag_sets = [
+            flag_set(
+                actions = base_link_actions + lto_index_actions,
+                flag_groups = [flag_group(flags = ["-Wl,--push-state,-as-needed", "-lstdc++", "-Wl,--pop-state"])],
+            ),
+        ],
+    )
+
     linker_lld_feature = feature(
         name = "linker-lld",
         enabled = False,
@@ -557,6 +568,7 @@ def _impl(ctx):
             include_paths_feature,
             library_search_directories_feature,
             default_link_flags_feature,
+            default_link_libs_feature,
             linker_lld_feature,
             supports_dynamic_linker_feature,
             supports_pic_feature,
