@@ -123,9 +123,6 @@ def _impl(ctx):
                         flags = [
                             "-Wl,-z,relro,-z,now",
                             "-pass-exit-codes",
-                            "-lm",
-                            "-ldl",
-                            "-lrt",
                             "-pthread",
                         ],
                     ),
@@ -145,7 +142,7 @@ def _impl(ctx):
         flag_sets = [
             flag_set(
                 actions = base_link_actions + lto_index_actions,
-                flag_groups = [flag_group(flags = ["-Wl,--push-state,-as-needed", "-lstdc++", "-Wl,--pop-state"])],
+                flag_groups = [flag_group(flags = ["-Wl,--push-state,-as-needed", "-lstdc++", "-lm", "-ldl", "-lrt", "-Wl,--pop-state"])],
             ),
         ],
     )
